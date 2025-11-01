@@ -35,17 +35,7 @@ func newDialer() *dialer {
 	var heDialer *happyeyeballs.Dialer
 
 	if heConfig.Enabled {
-		var store happyeyeballs.MetricsStore
-		if heConfig.MetricsDBEnabled {
-			var err error
-			store, err = happyeyeballs.NewSupabaseStore()
-			if err != nil {
-				// Log warning but don't fail, just disable DB storage
-				heConfig.MetricsDBEnabled = false
-			}
-		}
-
-		heMetrics = happyeyeballs.NewMetrics(heConfig.MetricsEnabled, heConfig.MetricsDBEnabled, store)
+		heMetrics = happyeyeballs.NewMetrics(heConfig.MetricsEnabled)
 
 		netDialer := net.Dialer{
 			Timeout:   15 * time.Second,

@@ -14,21 +14,19 @@ const (
 )
 
 type Config struct {
-	Enabled          bool
-	ResolutionDelay  time.Duration
-	ConnectionDelay  time.Duration
-	MetricsEnabled   bool
-	VerboseLogging   bool
-	MetricsDBEnabled bool
+	Enabled         bool
+	ResolutionDelay time.Duration
+	ConnectionDelay time.Duration
+	MetricsEnabled  bool
+	VerboseLogging  bool
 }
 
 func LoadConfigFromEnv() *Config {
 	cfg := &Config{
-		Enabled:          parseBoolEnv("LETSDANE_HAPPY_EYEBALLS", false),
-		ResolutionDelay:  parseDurationEnv("LETSDANE_HE_RESOLUTION_DELAY", DefaultResolutionDelay),
-		ConnectionDelay:  parseDurationEnv("LETSDANE_HE_CONNECTION_DELAY", DefaultConnectionDelay),
-		VerboseLogging:   parseBoolEnv("LETSDANE_HE_VERBOSE", false),
-		MetricsDBEnabled: parseBoolEnv("LETSDANE_HE_METRICS_DB", false),
+		Enabled:         parseBoolEnv("LETSDANE_HAPPY_EYEBALLS", false),
+		ResolutionDelay: parseDurationEnv("LETSDANE_HE_RESOLUTION_DELAY", DefaultResolutionDelay),
+		ConnectionDelay: parseDurationEnv("LETSDANE_HE_CONNECTION_DELAY", DefaultConnectionDelay),
+		VerboseLogging:  parseBoolEnv("LETSDANE_HE_VERBOSE", false),
 	}
 
 	cfg.MetricsEnabled = parseBoolEnv("LETSDANE_HE_METRICS", cfg.Enabled)

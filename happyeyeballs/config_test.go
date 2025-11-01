@@ -16,12 +16,11 @@ func TestLoadConfigFromEnv(t *testing.T) {
 			name:    "default_config",
 			envVars: map[string]string{},
 			expectedConfig: Config{
-				Enabled:          false,
-				ResolutionDelay:  DefaultResolutionDelay,
-				ConnectionDelay:  DefaultConnectionDelay,
-				MetricsEnabled:   false,
-				VerboseLogging:   false,
-				MetricsDBEnabled: false,
+				Enabled:         false,
+				ResolutionDelay: DefaultResolutionDelay,
+				ConnectionDelay: DefaultConnectionDelay,
+				MetricsEnabled:  false,
+				VerboseLogging:  false,
 			},
 		},
 		{
@@ -30,43 +29,40 @@ func TestLoadConfigFromEnv(t *testing.T) {
 				"LETSDANE_HAPPY_EYEBALLS": "true",
 			},
 			expectedConfig: Config{
-				Enabled:          true,
-				ResolutionDelay:  DefaultResolutionDelay,
-				ConnectionDelay:  DefaultConnectionDelay,
-				MetricsEnabled:   true,
-				VerboseLogging:   false,
-				MetricsDBEnabled: false,
+				Enabled:         true,
+				ResolutionDelay: DefaultResolutionDelay,
+				ConnectionDelay: DefaultConnectionDelay,
+				MetricsEnabled:  true,
+				VerboseLogging:  false,
 			},
 		},
 		{
 			name: "custom_delays",
 			envVars: map[string]string{
-				"LETSDANE_HAPPY_EYEBALLS":        "true",
-				"LETSDANE_HE_RESOLUTION_DELAY":   "100",
-				"LETSDANE_HE_CONNECTION_DELAY":   "300",
+				"LETSDANE_HAPPY_EYEBALLS":      "true",
+				"LETSDANE_HE_RESOLUTION_DELAY": "100",
+				"LETSDANE_HE_CONNECTION_DELAY": "300",
 			},
 			expectedConfig: Config{
-				Enabled:          true,
-				ResolutionDelay:  100 * time.Millisecond,
-				ConnectionDelay:  300 * time.Millisecond,
-				MetricsEnabled:   true,
-				VerboseLogging:   false,
-				MetricsDBEnabled: false,
+				Enabled:         true,
+				ResolutionDelay: 100 * time.Millisecond,
+				ConnectionDelay: 300 * time.Millisecond,
+				MetricsEnabled:  true,
+				VerboseLogging:  false,
 			},
 		},
 		{
 			name: "delay_clamping",
 			envVars: map[string]string{
-				"LETSDANE_HAPPY_EYEBALLS":        "true",
-				"LETSDANE_HE_CONNECTION_DELAY":   "50",
+				"LETSDANE_HAPPY_EYEBALLS":      "true",
+				"LETSDANE_HE_CONNECTION_DELAY": "50",
 			},
 			expectedConfig: Config{
-				Enabled:          true,
-				ResolutionDelay:  DefaultResolutionDelay,
-				ConnectionDelay:  MinConnectionDelay,
-				MetricsEnabled:   true,
-				VerboseLogging:   false,
-				MetricsDBEnabled: false,
+				Enabled:         true,
+				ResolutionDelay: DefaultResolutionDelay,
+				ConnectionDelay: MinConnectionDelay,
+				MetricsEnabled:  true,
+				VerboseLogging:  false,
 			},
 		},
 		{
@@ -75,15 +71,13 @@ func TestLoadConfigFromEnv(t *testing.T) {
 				"LETSDANE_HAPPY_EYEBALLS": "true",
 				"LETSDANE_HE_METRICS":     "true",
 				"LETSDANE_HE_VERBOSE":     "true",
-				"LETSDANE_HE_METRICS_DB":  "true",
 			},
 			expectedConfig: Config{
-				Enabled:          true,
-				ResolutionDelay:  DefaultResolutionDelay,
-				ConnectionDelay:  DefaultConnectionDelay,
-				MetricsEnabled:   true,
-				VerboseLogging:   true,
-				MetricsDBEnabled: true,
+				Enabled:         true,
+				ResolutionDelay: DefaultResolutionDelay,
+				ConnectionDelay: DefaultConnectionDelay,
+				MetricsEnabled:  true,
+				VerboseLogging:  true,
 			},
 		},
 	}
@@ -115,9 +109,6 @@ func TestLoadConfigFromEnv(t *testing.T) {
 			}
 			if cfg.VerboseLogging != tt.expectedConfig.VerboseLogging {
 				t.Errorf("VerboseLogging: got %v, want %v", cfg.VerboseLogging, tt.expectedConfig.VerboseLogging)
-			}
-			if cfg.MetricsDBEnabled != tt.expectedConfig.MetricsDBEnabled {
-				t.Errorf("MetricsDBEnabled: got %v, want %v", cfg.MetricsDBEnabled, tt.expectedConfig.MetricsDBEnabled)
 			}
 		})
 	}

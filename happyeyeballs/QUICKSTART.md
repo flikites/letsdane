@@ -42,15 +42,6 @@ export LETSDANE_HE_VERBOSE=true
 letsdane -r 1.1.1.1
 ```
 
-#### With Database Metrics
-```bash
-export LETSDANE_HAPPY_EYEBALLS=true
-export LETSDANE_HE_METRICS_DB=true
-export SUPABASE_URL=https://your-project.supabase.co
-export SUPABASE_ANON_KEY=your-anon-key
-letsdane -r 1.1.1.1
-```
-
 ## Understanding the Metrics
 
 When Happy Eyeballs is enabled with metrics, you'll see output like:
@@ -121,21 +112,6 @@ Disable Happy Eyeballs if:
    export LETSDANE_HE_METRICS=true
    ```
 
-### Database Storage Not Working?
-
-1. Verify environment variables:
-   ```bash
-   echo $SUPABASE_URL
-   echo $SUPABASE_ANON_KEY
-   ```
-
-2. Check database tables exist:
-   - Log into Supabase dashboard
-   - Verify `he_dns_resolutions` and `he_connection_attempts` tables exist
-
-3. Check logs for database errors:
-   - Look for "[WARN] Failed to save..." messages
-
 ## For Developers
 
 ### Running Tests
@@ -163,7 +139,6 @@ happyeyeballs/
 ├── resolver.go        # Concurrent DNS lookups
 ├── dialer.go          # Connection racing algorithm
 ├── metrics.go         # Metrics collection
-├── supabase.go        # Database storage
 └── *_test.go          # Test files
 ```
 
@@ -196,7 +171,6 @@ To extend Happy Eyeballs:
 2. **New metric:**
    - Add to `metrics.go` structures
    - Update `RecordConnectionAttempt()` or `RecordDNSResolution()`
-   - Update database schema if persisting
 
 3. **Algorithm modification:**
    - Update `dialer.go` for connection logic
@@ -223,32 +197,3 @@ To extend Happy Eyeballs:
 
 ### Q: Can I disable metrics?
 **A:** Yes! Set `LETSDANE_HE_METRICS=false` to disable metrics logging.
-
-### Q: How do I analyze the database metrics?
-**A:** Query the Supabase tables:
-
-```sql
--- See IPv6 vs IPv4 win rates
-SELECT
-  family,
-  COUNT(*) as attempts,
-  SUM(CASE WHEN winner THEN 1 ELSE 0 END) as wins
-FROM he_connection_attempts
-GROUP BY family;
-
--- Average connection times by family
-SELECT
-  family,
-  AVG(duration_ms) as avg_duration_ms
-FROM he_connection_attempts
-WHERE success = true
-GROUP BY family;
-```
-
-## Support
-
-For issues or questions:
-1. Check the main README: `../README.md`
-2. Check package documentation: `README.md`
-3. Review implementation details: `../HAPPY_EYEBALLS_IMPLEMENTATION.md`
-4. Check test files for usage examples: `*_test.go`

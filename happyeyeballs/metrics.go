@@ -1,7 +1,6 @@
 package happyeyeballs
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"
@@ -31,25 +30,16 @@ type DNSResolution struct {
 }
 
 type Metrics struct {
-	mu                sync.RWMutex
-	enabled           bool
-	dbEnabled         bool
-	dnsResolutions    []DNSResolution
+	mu                 sync.RWMutex
+	enabled            bool
+	dnsResolutions     []DNSResolution
 	connectionAttempts []ConnectionAttempt
-	dbClient          MetricsStore
 }
 
-type MetricsStore interface {
-	SaveConnectionAttempt(ctx context.Context, attempt *ConnectionAttempt) error
-	SaveDNSResolution(ctx context.Context, resolution *DNSResolution) error
-}
-
-func NewMetrics(enabled, dbEnabled bool, store MetricsStore) *Metrics {
+func NewMetrics(enabled bool) *Metrics {
 	return &Metrics{
-		enabled:           enabled,
-		dbEnabled:         dbEnabled,
-		dbClient:          store,
-		dnsResolutions:    make([]DNSResolution, 0),
+		enabled:            enabled,
+		dnsResolutions:     make([]DNSResolution, 0),
 		connectionAttempts: make([]ConnectionAttempt, 0),
 	}
 }
@@ -75,16 +65,6 @@ func (m *Metrics) RecordDNSResolution(resolution DNSResolution) {
 	} else {
 		log.Printf("[WARN] Happy Eyeballs: DNS %s lookup for %s failed after %v: %v",
 			familyStr, resolution.Host, duration, resolution.Error)
-	}
-
-	if m.dbEnabled && m.dbClient != nil {
-		go func(res DNSResolution) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := m.dbClient.SaveDNSResolution(ctx, &res); err != nil {
-				log.Printf("[WARN] Failed to save DNS resolution metrics: %v", err)
-			}
-		}(resolution)
 	}
 }
 
@@ -114,16 +94,6 @@ func (m *Metrics) RecordConnectionAttempt(attempt ConnectionAttempt) {
 	} else {
 		log.Printf("[WARN] Happy Eyeballs: Connection to %s (%s %s) failed after %v: %v",
 			attempt.Host, familyStr, attempt.IP, duration, attempt.Error)
-	}
-
-	if m.dbEnabled && m.dbClient != nil {
-		go func(att ConnectionAttempt) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := m.dbClient.SaveConnectionAttempt(ctx, &att); err != nil {
-				log.Printf("[WARN] Failed to save connection attempt metrics: %v", err)
-			}
-		}(attempt)
 	}
 }
 

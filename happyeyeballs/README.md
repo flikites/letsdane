@@ -14,7 +14,6 @@ Loads configuration from environment variables with sensible defaults following 
 - **Connection Delay**: 250ms (time between connection attempts)
 - **Metrics**: Enabled by default when Happy Eyeballs is enabled
 - **Verbose Logging**: Disabled by default
-- **Database Storage**: Disabled by default
 
 ### Address Sorting (`sorter.go`)
 
@@ -54,17 +53,7 @@ Tracks connection performance:
 - Connection attempt success/failure rates
 - Winning connection by address family
 - Performance statistics for analysis
-- Optional database storage via Supabase
-
-### Database Storage (`supabase.go`)
-
-Provides optional long-term metrics storage:
-
-- Stores DNS resolution metrics
-- Stores connection attempt metrics
-- Uses Supabase for cloud storage
-- Non-blocking asynchronous writes
-- Graceful degradation on errors
+- In-memory metrics with log output
 
 ## Integration with letsdane
 
@@ -129,10 +118,6 @@ Tests cover:
 - `LETSDANE_HE_VERBOSE` (bool, default: false)
   - Enable verbose debugging output for troubleshooting
 
-- `LETSDANE_HE_METRICS_DB` (bool, default: false)
-  - Enable storing metrics to Supabase database
-  - Requires SUPABASE_URL and SUPABASE_ANON_KEY environment variables
-
 ## Performance Impact
 
 Happy Eyeballs provides several benefits:
@@ -141,16 +126,6 @@ Happy Eyeballs provides several benefits:
 2. **IPv6 Preference**: Encourages IPv6 adoption while ensuring connectivity
 3. **Fault Tolerance**: Automatically falls back to working address family
 4. **Efficient**: Minimal overhead when disabled or in single-stack environments
-
-## Future Enhancements
-
-Potential improvements for future versions:
-
-- NAT64/DNS64 support for IPv6-only networks
-- Connection history to prefer faster address family
-- Integration with system preference hints
-- Advanced metrics aggregation and reporting
-- Connection quality of service (QoS) tracking
 
 ## References
 

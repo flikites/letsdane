@@ -81,7 +81,6 @@ Happy Eyeballs can be configured using the following environment variables:
 - `LETSDANE_HE_CONNECTION_DELAY` - Connection attempt delay in milliseconds (default: `250`, min: `100`, max: `2000`)
 - `LETSDANE_HE_METRICS` - Enable/disable metrics logging (default: `true` when Happy Eyeballs is enabled)
 - `LETSDANE_HE_VERBOSE` - Enable verbose debugging output (default: `false`)
-- `LETSDANE_HE_METRICS_DB` - Enable storing metrics to Supabase database (default: `false`)
 
 #### Example with Custom Configuration
 
@@ -106,18 +105,6 @@ To disable metrics logging:
 ```bash
 export LETSDANE_HAPPY_EYEBALLS=true
 export LETSDANE_HE_METRICS=false
-letsdane -r 1.1.1.1
-```
-
-#### Database Storage
-
-Metrics can optionally be stored in a Supabase database for long-term analysis. To enable database storage, set the following environment variables:
-
-```bash
-export LETSDANE_HAPPY_EYEBALLS=true
-export LETSDANE_HE_METRICS_DB=true
-export SUPABASE_URL=your-supabase-url
-export SUPABASE_ANON_KEY=your-supabase-anon-key
 letsdane -r 1.1.1.1
 ```
 
