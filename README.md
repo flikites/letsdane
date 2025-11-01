@@ -29,7 +29,7 @@ You are essentially trusting your own private certificate authority. You can ins
 - [x] Client-side DNSSEC validation using libunbound
 - [x] Prevents downgrade attacks to traditional CAs
 - [x] Lightweight DANE tunnels that work with most protocols and with ALPN support.
-- [ ] Happy Eyeballs v2 ([RFC8305](https://tools.ietf.org/html/rfc8305))
+- [x] Happy Eyeballs v2 ([RFC8305](https://tools.ietf.org/html/rfc8305))
 
 ## Build from source
 
@@ -58,6 +58,79 @@ If you don't specify a resolver, letsdane will use the system resolver settings 
 If letsdane is compiled with libunbound, all queries are DNSSEC validated with a hardcoded ICANN 2017 KSK (you can set trust anchor file by setting `-anchor` option)
 
 Use `letsdane -help` to see command line options.
+
+### Happy Eyeballs v2 (RFC 8305)
+
+Let's DANE now supports Happy Eyeballs v2 for faster connection establishment in dual-stack environments. This feature is **opt-in** and can be enabled via environment variables.
+
+#### Enabling Happy Eyeballs
+
+To enable Happy Eyeballs, set the following environment variable:
+
+```bash
+export LETSDANE_HAPPY_EYEBALLS=true
+letsdane -r 1.1.1.1
+```
+
+#### Configuration Options
+
+Happy Eyeballs can be configured using the following environment variables:
+
+- `LETSDANE_HAPPY_EYEBALLS` - Enable/disable Happy Eyeballs (default: `false`)
+- `LETSDANE_HE_RESOLUTION_DELAY` - DNS resolution delay in milliseconds to prefer IPv6 (default: `50`)
+- `LETSDANE_HE_CONNECTION_DELAY` - Connection attempt delay in milliseconds (default: `250`, min: `100`, max: `2000`)
+- `LETSDANE_HE_METRICS` - Enable/disable metrics logging (default: `true` when Happy Eyeballs is enabled)
+- `LETSDANE_HE_VERBOSE` - Enable verbose debugging output (default: `false`)
+- `LETSDANE_HE_METRICS_DB` - Enable storing metrics to Supabase database (default: `false`)
+
+#### Example with Custom Configuration
+
+```bash
+export LETSDANE_HAPPY_EYEBALLS=true
+export LETSDANE_HE_RESOLUTION_DELAY=100
+export LETSDANE_HE_CONNECTION_DELAY=300
+export LETSDANE_HE_METRICS=true
+export LETSDANE_HE_VERBOSE=false
+letsdane -r 1.1.1.1
+```
+
+#### Metrics Collection
+
+When Happy Eyeballs is enabled, connection metrics are automatically logged, showing:
+- DNS resolution timing for IPv4 and IPv6
+- Connection attempt outcomes for each address
+- Which address family (IPv4 or IPv6) wins the connection race
+- Performance statistics for monitoring IPv6 adoption
+
+To disable metrics logging:
+```bash
+export LETSDANE_HAPPY_EYEBALLS=true
+export LETSDANE_HE_METRICS=false
+letsdane -r 1.1.1.1
+```
+
+#### Database Storage
+
+Metrics can optionally be stored in a Supabase database for long-term analysis. To enable database storage, set the following environment variables:
+
+```bash
+export LETSDANE_HAPPY_EYEBALLS=true
+export LETSDANE_HE_METRICS_DB=true
+export SUPABASE_URL=your-supabase-url
+export SUPABASE_ANON_KEY=your-supabase-anon-key
+letsdane -r 1.1.1.1
+```
+
+#### How It Works
+
+Happy Eyeballs v2 implements the following algorithm:
+1. DNS queries for both IPv6 (AAAA) and IPv4 (A) records are sent with a small delay (default 50ms) to prefer IPv6
+2. Addresses are sorted and interleaved to alternate between IPv6 and IPv4
+3. Connection attempts are staggered with configurable delays (default 250ms)
+4. The first successful connection wins; other attempts are cancelled
+5. DANE and DNSSEC validation are preserved throughout the process
+
+This reduces connection latency in dual-stack environments while maintaining security guarantees.
 
 ### DANE Tools
 

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/buffrr/letsdane/happyeyeballs"
 	"github.com/buffrr/letsdane/resolver"
 	"github.com/miekg/dns"
 	"net"
@@ -13,8 +14,11 @@ import (
 )
 
 type dialer struct {
-	net      net.Dialer
-	resolver resolver.Resolver
+	net       net.Dialer
+	resolver  resolver.Resolver
+	heConfig  *happyeyeballs.Config
+	heDialer  *happyeyeballs.Dialer
+	heMetrics *happyeyeballs.Metrics
 }
 
 var errBadHost = errors.New("bad host")
@@ -26,17 +30,54 @@ type addrList struct {
 }
 
 func newDialer() *dialer {
+	heConfig := happyeyeballs.LoadConfigFromEnv()
+	var heMetrics *happyeyeballs.Metrics
+	var heDialer *happyeyeballs.Dialer
+
+	if heConfig.Enabled {
+		var store happyeyeballs.MetricsStore
+		if heConfig.MetricsDBEnabled {
+			var err error
+			store, err = happyeyeballs.NewSupabaseStore()
+			if err != nil {
+				// Log warning but don't fail, just disable DB storage
+				heConfig.MetricsDBEnabled = false
+			}
+		}
+
+		heMetrics = happyeyeballs.NewMetrics(heConfig.MetricsEnabled, heConfig.MetricsDBEnabled, store)
+
+		netDialer := net.Dialer{
+			Timeout:   15 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}
+		heDialer = happyeyeballs.NewDialer(netDialer, heConfig, heMetrics)
+	}
+
 	return &dialer{
 		net: net.Dialer{
 			Timeout:   15 * time.Second,
 			KeepAlive: 30 * time.Second,
 		},
+		heConfig:  heConfig,
+		heDialer:  heDialer,
+		heMetrics: heMetrics,
 	}
 }
 
 // dialTLSContext attempts to connect to one of the dst addresses and initiates a TLS
 // handshake, returning the resulting TLS connection.
 func (d *dialer) dialTLSContext(ctx context.Context, network string, dst *addrList, config *tls.Config) (*tls.Conn, error) {
+	if d.heConfig != nil && d.heConfig.Enabled && d.heDialer != nil && len(dst.IPs) > 0 {
+		conn, err := d.heDialer.DialTLSHappyEyeballs(ctx, network, dst.Host, dst.Port, dst.IPs, config)
+		if err == nil {
+			return conn, nil
+		}
+		if err, ok := err.(*tlsError); ok {
+			return nil, err
+		}
+	}
+
 	tlsDialer := &tls.Dialer{
 		NetDialer: &d.net,
 		Config:    config,
@@ -69,6 +110,13 @@ func (d *dialer) dialContext(ctx context.Context, network, addr string) (net.Con
 
 // dialAddrList attempts to connect to one of the dst addresses
 func (d *dialer) dialAddrList(ctx context.Context, network string, dst *addrList) (net.Conn, error) {
+	if d.heConfig != nil && d.heConfig.Enabled && d.heDialer != nil && len(dst.IPs) > 0 {
+		conn, err := d.heDialer.DialHappyEyeballs(ctx, network, dst.Host, dst.Port, dst.IPs)
+		if err == nil {
+			return conn, nil
+		}
+	}
+
 	for _, ip := range dst.IPs {
 		ipaddr := net.JoinHostPort(ip.String(), dst.Port)
 		conn, err := d.net.DialContext(ctx, network, ipaddr)
@@ -89,7 +137,16 @@ func (d *dialer) resolveAddr(ctx context.Context, addr string) (addrs *addrList,
 	if err != nil {
 		return
 	}
-	addrs.IPs, _, err = d.resolver.LookupIP(ctx, "ip", addrs.Host)
+
+	if d.heConfig != nil && d.heConfig.Enabled && d.heMetrics != nil {
+		lookupFunc := func(ctx context.Context, network, host string) ([]net.IP, bool, error) {
+			return d.resolver.LookupIP(ctx, network, host)
+		}
+		addrs.IPs, _, err = happyeyeballs.ConcurrentDNSLookup(ctx, addrs.Host, lookupFunc, d.heConfig.ResolutionDelay, d.heMetrics)
+	} else {
+		addrs.IPs, _, err = d.resolver.LookupIP(ctx, "ip", addrs.Host)
+	}
+
 	if err != nil {
 		return
 	}
@@ -119,7 +176,14 @@ func (d *dialer) resolveDANE(ctx context.Context, network, host string, constrai
 	var tlsaErr, ipErr error
 
 	go func() {
-		addrs.IPs, _, ipErr = d.resolver.LookupIP(ctx, "ip", addrs.Host)
+		if d.heConfig != nil && d.heConfig.Enabled && d.heMetrics != nil {
+			lookupFunc := func(ctx context.Context, network, host string) ([]net.IP, bool, error) {
+				return d.resolver.LookupIP(ctx, network, host)
+			}
+			addrs.IPs, _, ipErr = happyeyeballs.ConcurrentDNSLookup(ctx, addrs.Host, lookupFunc, d.heConfig.ResolutionDelay, d.heMetrics)
+		} else {
+			addrs.IPs, _, ipErr = d.resolver.LookupIP(ctx, "ip", addrs.Host)
+		}
 		done <- struct{}{}
 	}()
 
